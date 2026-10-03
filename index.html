@@ -1,0 +1,1507 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#000000">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="format-detection" content="telephone=no">
+<meta name="msapplication-tap-highlight" content="no">
+<link rel="manifest" href="data:application/manifest+json,%7B%22name%22%3A%22%22%2C%22short_name%22%3A%22%22%2C%22display%22%3A%22fullscreen%22%2C%22orientation%22%3A%22portrait%22%2C%22background_color%22%3A%22%23000000%22%2C%22theme_color%22%3A%22%23000000%22%2C%22start_url%22%3A%22.%22%7D">
+<link rel="apple-touch-icon" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=">
+<title>·</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  html, body {
+    width:100%; height:100%; overflow:hidden;
+    background:#000; color:#0f0;
+    font-family: 'SF Mono', ui-monospace, Menlo, Consolas, 'Courier New', monospace;
+    position: fixed; inset: 0;
+    overscroll-behavior: none;
+    -webkit-overflow-scrolling: none;
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: pan-y;
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+  }
+
+  ::-webkit-scrollbar { display: none; width: 0; height: 0; }
+  * { scrollbar-width: none; -ms-overflow-style: none; }
+  ::selection { background: transparent; }
+  ::-moz-selection { background: transparent; }
+  *:focus { outline: none; }
+
+  /* ============================================
+     BLACKOUT START
+     ============================================ */
+  #blackout {
+    position: fixed; inset: 0;
+    background: #000;
+    z-index: 999999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: opacity 0.6s ease;
+  }
+  #blackout.off {
+    opacity: 0;
+    pointer-events: none;
+  }
+  #blackoutGlow {
+    position: absolute;
+    inset: 0;
+    background:
+      radial-gradient(circle at 50% 50%,
+        rgba(0,255,65,0.0) 0%,
+        rgba(0,255,65,0.0) 40%,
+        rgba(0,0,0,1) 100%);
+    pointer-events: none;
+    animation: blackoutBreathe 4s ease-in-out infinite;
+  }
+  @keyframes blackoutBreathe {
+    0%,100% { opacity: 0.15; }
+    50%     { opacity: 0.4; }
+  }
+
+  #term {
+    position: fixed; inset: 0;
+    display: flex; flex-direction: column;
+    background: #000;
+    z-index: 1;
+    transition: opacity 0.6s ease;
+  }
+
+  .term-header {
+    padding: 12px 16px;
+    background: #0a0a0a;
+    border-bottom: 1px solid #1a1a1a;
+    display: flex; align-items: center; gap: 8px;
+    font-size: 12px;
+    padding-top: calc(12px + env(safe-area-inset-top, 0));
+    flex-shrink: 0;
+  }
+  .dot { width: 10px; height: 10px; border-radius: 50%; }
+  .dot.r { background: #ff5f57; }
+  .dot.y { background: #febc2e; }
+  .dot.g { background: #28c840; }
+  .term-title {
+    margin-left: 10px;
+    color: #888;
+    font-size: 11.5px;
+    letter-spacing: 0.3px;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    flex: 1;
+  }
+
+  .term-body {
+    flex: 1;
+    padding: 14px 16px 90px;
+    overflow-y: auto;
+    overflow-x: hidden;
+    font-size: 11.5px;
+    line-height: 1.45;
+    color: #00ff41;
+    text-shadow: 0 0 6px rgba(0,255,65,0.5);
+    scroll-behavior: smooth;
+    position: relative;
+  }
+  .term-body::-webkit-scrollbar { width: 0; }
+  .term-body::after {
+    content:'';
+    position: fixed; inset: 0;
+    background-image:
+      repeating-linear-gradient(0deg, rgba(0,255,65,0.045) 0 1px, transparent 1px 3px);
+    pointer-events: none;
+    animation: scan 5s linear infinite;
+    z-index: 2;
+  }
+  @keyframes scan {
+    from { background-position-y: 0; }
+    to   { background-position-y: 120px; }
+  }
+
+  .line { white-space: pre-wrap; word-break: break-all; margin-bottom: 0; }
+  .line.dim    { color: #0a8a2a; text-shadow: 0 0 4px rgba(0,150,50,0.4); }
+  .line.ok     { color: #00ff41; }
+  .line.warn   { color: #ffaa00; text-shadow: 0 0 6px rgba(255,170,0,0.6); }
+  .line.danger { color: #ff2b2b; text-shadow: 0 0 10px rgba(255,43,43,0.8); font-weight: 700; }
+  .line.user   { color: #00b3ff; text-shadow: 0 0 6px rgba(0,180,255,0.5); }
+  .line.mag    { color: #ff44ff; text-shadow: 0 0 6px rgba(255,68,255,0.6); }
+  .line.cyan   { color: #00ffff; text-shadow: 0 0 6px rgba(0,255,255,0.6); }
+  .line.hex    { color: #66ff66; letter-spacing: 0; font-size: 10.5px; }
+  .line.hash   { color: #99ff99; font-size: 10.5px; }
+  .line.b64    { color: #ffaa88; font-size: 10.5px; }
+
+  .cursor::after {
+    content: '█';
+    animation: blink 0.7s steps(2) infinite;
+    margin-left: 2px;
+  }
+  @keyframes blink { 0%,50%{opacity:1;} 51%,100%{opacity:0;} }
+
+  .term-status {
+    position: fixed; bottom: 0; left: 0; right: 0;
+    padding: 10px 16px;
+    padding-bottom: calc(10px + env(safe-area-inset-bottom, 0));
+    background: linear-gradient(180deg, transparent, #000 40%);
+    display: flex; justify-content: space-between; align-items: center;
+    font-size: 10px;
+    color: #444;
+    letter-spacing: 0.4px;
+    z-index: 3;
+    pointer-events: none;
+    font-family: 'SF Mono', ui-monospace, monospace;
+  }
+  .term-status .live {
+    color: #ff2b2b;
+    animation: liveBlink 1s steps(2) infinite;
+  }
+  @keyframes liveBlink { 0%,50%{opacity:1;} 51%,100%{opacity:0.2;} }
+
+  #glitch {
+    position: fixed; inset: 0;
+    background: #fff;
+    opacity: 0;
+    pointer-events: none;
+    z-index: 9999;
+    mix-blend-mode: difference;
+  }
+  #glitch.on { animation: gflash 0.05s steps(2) infinite; }
+  @keyframes gflash {
+    0%{opacity:0;} 50%{opacity:0.35;} 100%{opacity:0;}
+  }
+  #glitch.red { background: #ff0000; mix-blend-mode: screen; }
+  #glitch.cyan { background: #00ffff; mix-blend-mode: screen; }
+  #glitch.magenta { background: #ff00ff; mix-blend-mode: screen; }
+
+  body.microquake { animation: microquake .06s infinite; }
+  @keyframes microquake {
+    0%{transform:translate(0,0);}
+    25%{transform:translate(-3px,2px);}
+    50%{transform:translate(2px,-3px);}
+    75%{transform:translate(-2px,-2px);}
+    100%{transform:translate(3px,2px);}
+  }
+
+  #invertFlash {
+    position: fixed; inset: 0;
+    background: #fff;
+    opacity: 0;
+    pointer-events: none;
+    z-index: 9998;
+    mix-blend-mode: difference;
+    display: none;
+  }
+  #invertFlash.on { display: block; animation: invertBlink 0.05s steps(2) infinite; }
+  @keyframes invertBlink {
+    0%{opacity:0;} 50%{opacity:1;} 100%{opacity:0;}
+  }
+
+  #tear {
+    position: fixed; inset: 0;
+    pointer-events: none;
+    z-index: 9997;
+    opacity: 0;
+    mix-blend-mode: difference;
+    display: none;
+  }
+  #tear.on { display: block; opacity: 1; animation: tearShift .1s steps(4) infinite; }
+  @keyframes tearShift {
+    0% {
+      background: linear-gradient(180deg,
+        transparent 12%, rgba(255,255,255,0.4) 12%, rgba(255,255,255,0.4) 14%, transparent 14%,
+        transparent 38%, rgba(0,255,255,0.4) 38%, rgba(0,255,255,0.4) 41%, transparent 41%,
+        transparent 66%, rgba(255,0,0,0.4) 66%, rgba(255,0,0,0.4) 69%, transparent 69%,
+        transparent 88%, rgba(255,255,0,0.3) 88%, rgba(255,255,0,0.3) 90%, transparent 90%);
+      transform: translate(0,0);
+    }
+    50% { transform: translate(-14px, 2px); }
+    100% { transform: translate(12px, -2px); }
+  }
+
+  .cam-thumb {
+    position: fixed;
+    top: calc(24px + env(safe-area-inset-top, 0));
+    right: 20px;
+    width: 92px; height: 122px;
+    background: #0a0000;
+    border: 1px solid rgba(255,40,40,0.5);
+    border-radius: 6px;
+    overflow: hidden;
+    z-index: 10001;
+    display: none;
+    box-shadow: 0 0 20px rgba(255,0,0,0.3), inset 0 0 30px rgba(255,0,0,0.15);
+  }
+  .cam-thumb.active { display: block; }
+  .cam-thumb::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background:
+      repeating-linear-gradient(0deg, rgba(255,0,0,0.08) 0 1px, transparent 1px 3px),
+      radial-gradient(circle at 50% 50%, rgba(80,0,0,0.4), #000 90%);
+    animation: camNoise 0.2s steps(2) infinite;
+  }
+  @keyframes camNoise {
+    0% { transform: translate(0,0); }
+    50% { transform: translate(-1px, 1px); }
+    100% { transform: translate(1px, -1px); }
+  }
+  .cam-thumb .rec {
+    position: absolute;
+    top: 6px; left: 8px;
+    font-size: 9px;
+    color: #ff2b2b;
+    letter-spacing: 1px;
+    font-family: 'SF Mono', monospace;
+    z-index: 2;
+  }
+  .cam-thumb .rec::before {
+    content: '●';
+    margin-right: 4px;
+    animation: recBlink 1s steps(2) infinite;
+  }
+  @keyframes recBlink { 0%,50%{opacity:1;} 51%,100%{opacity:0.2;} }
+  .cam-thumb .timer {
+    position: absolute;
+    bottom: 6px; right: 8px;
+    font-size: 9px;
+    color: #ff8888;
+    font-family: 'SF Mono', monospace;
+    z-index: 2;
+    letter-spacing: 0.5px;
+  }
+
+  #lockdown {
+    position: fixed; inset: 0;
+    background: #000;
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 40px 28px;
+    z-index: 10000;
+    text-align: center;
+    overflow: hidden;
+    padding-top: calc(40px + env(safe-area-inset-top, 0));
+    padding-bottom: calc(40px + env(safe-area-inset-bottom, 0));
+  }
+  #lockdown.active { display: flex; }
+
+  #lockdown::before {
+    content:''; position: absolute; inset: -30%;
+    background:
+      radial-gradient(ellipse at 50% 50%, rgba(255,0,0,0.15), transparent 60%),
+      radial-gradient(circle at 50% 50%, transparent 30%, rgba(120,0,0,0.5) 80%, #000 100%);
+    animation: lockdownPulse 2.4s ease-in-out infinite;
+    pointer-events: none;
+  }
+  @keyframes lockdownPulse {
+    0%,100% { opacity: 0.9; transform: scale(1); }
+    50%     { opacity: 1;   transform: scale(1.06); }
+  }
+
+  #lockdownCode {
+    position: absolute; inset: 0;
+    font-size: 11px;
+    line-height: 1.4;
+    color: rgba(255,0,0,0.18);
+    overflow: hidden;
+    white-space: pre;
+    pointer-events: none;
+    padding: 20px;
+    animation: codeScroll 16s linear infinite;
+    text-shadow: 0 0 8px rgba(255,0,0,0.3);
+  }
+  @keyframes codeScroll {
+    from { transform: translateY(0); }
+    to   { transform: translateY(-50%); }
+  }
+
+  #lockdown::after {
+    content:''; position: absolute; inset: 0;
+    background-image:
+      repeating-linear-gradient(0deg, rgba(255,0,0,0.06) 0 1px, transparent 1px 3px);
+    pointer-events: none;
+    animation: scan 4s linear infinite;
+  }
+
+  .lock-icon {
+    width: 100px; height: 100px;
+    margin-bottom: 22px;
+    position: relative;
+    z-index: 2;
+    animation: lockPulse 1.4s ease-in-out infinite;
+    filter: drop-shadow(0 0 30px rgba(255,0,0,0.9));
+  }
+  @keyframes lockPulse {
+    0%,100% { transform: scale(1); opacity: 1; }
+    50%     { transform: scale(1.06); opacity: 0.85; }
+  }
+
+  .lock-title {
+    font-size: 30px;
+    font-weight: 900;
+    color: #ff2b2b;
+    letter-spacing: 4px;
+    text-shadow: 0 0 20px #ff0000, 0 0 40px #ff0000, 0 2px 0 #000;
+    font-family: -apple-system, BlinkMacSystemFont, 'Pretendard', sans-serif;
+    margin-bottom: 8px;
+    position: relative; z-index: 2;
+  }
+
+  .lock-sub {
+    font-size: 13px;
+    color: #ff8888;
+    letter-spacing: 2px;
+    font-family: 'SF Mono', ui-monospace, monospace;
+    margin-bottom: 30px;
+    position: relative; z-index: 2;
+  }
+
+  .lock-log {
+    width: 100%;
+    max-width: 400px;
+    background: rgba(20,0,0,0.6);
+    border: 1px solid rgba(255,40,40,0.4);
+    border-radius: 8px;
+    padding: 12px 14px;
+    text-align: left;
+    font-size: 10.5px;
+    line-height: 1.55;
+    color: #ff6666;
+    font-family: 'SF Mono', ui-monospace, monospace;
+    position: relative; z-index: 2;
+    margin-bottom: 24px;
+    box-shadow: 0 0 30px rgba(255,0,0,0.2) inset, 0 0 20px rgba(255,0,0,0.15);
+    max-height: 190px;
+    overflow: hidden;
+  }
+  .lock-log .row {
+    display: flex; justify-content: space-between;
+    white-space: nowrap;
+    opacity: 0;
+    animation: logIn 0.35s ease forwards;
+  }
+  @keyframes logIn {
+    from { opacity: 0; transform: translateX(-8px); }
+    to   { opacity: 1; transform: translateX(0); }
+  }
+  .lock-log .row .k { color: #ff4444; }
+  .lock-log .row .v { color: #ffaaaa; }
+  .lock-log .row.ok .v { color: #ffdd88; }
+
+  .lock-counter {
+    font-size: 12px;
+    color: #ff4444;
+    letter-spacing: 1.5px;
+    font-family: 'SF Mono', ui-monospace, monospace;
+    position: relative; z-index: 2;
+    animation: blink 0.9s steps(2) infinite;
+  }
+  .lock-counter .num {
+    color: #fff;
+    font-size: 15px;
+    font-weight: 700;
+    text-shadow: 0 0 10px #ff0000;
+  }
+
+  .lock-footer {
+    position: absolute;
+    bottom: calc(28px + env(safe-area-inset-bottom, 0));
+    left: 0; right: 0;
+    text-align: center;
+    font-size: 9.5px;
+    color: rgba(255,80,80,0.5);
+    letter-spacing: 3px;
+    font-family: 'SF Mono', ui-monospace, monospace;
+    z-index: 2;
+    padding: 0 20px;
+  }
+
+  body.quake { animation: quake .05s infinite; }
+  @keyframes quake {
+    0%{transform:translate(0,0) rotate(0);}
+    25%{transform:translate(-6px,4px) rotate(-1deg);}
+    50%{transform:translate(5px,-5px) rotate(0.8deg);}
+    75%{transform:translate(-4px,-3px) rotate(-0.6deg);}
+    100%{transform:translate(0,0) rotate(0);}
+  }
+
+  .scramble-line {
+    color: #88ff88;
+    text-shadow: 0 0 6px rgba(100,255,100,0.6);
+    letter-spacing: 0;
+    font-size: 11px;
+  }
+
+  #confirmTrap {
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.85);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 99999;
+    padding: 30px;
+    text-align: center;
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+  }
+  #confirmTrap.active { display: flex; }
+  #confirmTrap .trap-box {
+    background: #0a0000;
+    border: 1px solid rgba(255,40,40,0.6);
+    border-radius: 12px;
+    padding: 28px 24px;
+    max-width: 360px;
+    box-shadow: 0 0 60px rgba(255,0,0,0.4);
+    animation: trapIn 0.3s ease;
+  }
+  @keyframes trapIn {
+    from { transform: scale(0.85); opacity: 0; }
+    to   { transform: scale(1); opacity: 1; }
+  }
+  #confirmTrap .trap-title {
+    font-size: 18px;
+    font-weight: 700;
+    color: #ff2b2b;
+    letter-spacing: 1px;
+    margin-bottom: 12px;
+    text-shadow: 0 0 15px #ff0000;
+  }
+  #confirmTrap .trap-text {
+    font-size: 12.5px;
+    color: #ff8888;
+    line-height: 1.6;
+    margin-bottom: 24px;
+    font-family: 'SF Mono', ui-monospace, monospace;
+  }
+  #confirmTrap .trap-btns {
+    display: flex;
+    gap: 10px;
+  }
+  #confirmTrap button {
+    flex: 1;
+    padding: 12px;
+    border-radius: 8px;
+    border: 1px solid rgba(255,40,40,0.4);
+    background: rgba(40,0,0,0.5);
+    color: #ffaaaa;
+    font-family: inherit;
+    font-size: 13px;
+    letter-spacing: 0.5px;
+    cursor: pointer;
+  }
+  #confirmTrap button:active { background: rgba(80,0,0,0.7); }
+</style>
+</head>
+<body>
+
+<!-- BLACKOUT START -->
+<div id="blackout">
+  <div id="blackoutGlow"></div>
+</div>
+
+<div class="cam-thumb" id="camThumb">
+  <div class="rec">REC</div>
+  <div class="timer" id="camTimer">00:00</div>
+</div>
+
+<div id="term">
+  <div class="term-header">
+    <span class="dot r"></span>
+    <span class="dot y"></span>
+    <span class="dot g"></span>
+    <span class="term-title" id="termTitle">— root@ghost — session #7749 — uptime 00:47:13</span>
+  </div>
+  <div class="term-body" id="termBody"></div>
+  <div class="term-status">
+    <span id="statLeft">target: unknown-device</span>
+    <span><span class="live">● LIVE</span> · <span id="statRight">uplink 4.7 MB/s</span></span>
+  </div>
+</div>
+
+<div id="lockdown">
+  <div id="lockdownCode"></div>
+
+  <svg class="lock-icon" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+    <path d="M50 8 C34 8 22 20 22 36 L22 42 L16 42 C13 42 11 44 11 47 L11 86 C11 89 13 91 16 91 L84 91 C87 91 89 89 89 86 L89 47 C89 44 87 42 84 42 L78 42 L78 36 C78 20 66 8 50 8 Z M50 16 C62 16 70 25 70 36 L70 42 L30 42 L30 36 C30 25 38 16 50 16 Z"
+          fill="#ff2b2b" stroke="#ff0000" stroke-width="1.5"/>
+    <circle cx="50" cy="65" r="7" fill="#000"/>
+    <rect x="47" y="65" width="6" height="14" fill="#000"/>
+  </svg>
+
+  <div class="lock-title">LOCKED</div>
+  <div class="lock-sub">// ALL SESSIONS HIJACKED //</div>
+
+  <div class="lock-log" id="lockLog">
+    <div class="row" style="animation-delay:.1s"><span class="k">victim</span><span class="v">SM-A245N · Android 13</span></div>
+    <div class="row" style="animation-delay:.3s"><span class="k">identity</span><span class="v">354***...***17</span></div>
+    <div class="row" style="animation-delay:.5s"><span class="k">power</span><span class="v" id="lkBattery">47% · not charging</span></div>
+    <div class="row" style="animation-delay:.7s"><span class="k">coordinates</span><span class="v">37.5***, 127.0***</span></div>
+    <div class="row" style="animation-delay:.9s"><span class="k">gallery</span><span class="v">2,147 / 2,147</span></div>
+    <div class="row" style="animation-delay:1.1s"><span class="k">conversations</span><span class="v">12,904 / 12,904</span></div>
+    <div class="row" style="animation-delay:1.3s"><span class="k">eyes</span><span class="v">STREAMING</span></div>
+    <div class="row" style="animation-delay:1.5s"><span class="k">ears</span><span class="v">RECORDING</span></div>
+    <div class="row ok" style="animation-delay:1.7s"><span class="k">possession</span><span class="v">COMPLETE · 3.8 GB</span></div>
+  </div>
+
+  <div class="lock-counter">
+    <span class="num" id="lockCount">00</span> : <span id="lockText">MONITORING</span>
+  </div>
+
+  <div class="lock-footer" id="lockFooter">
+    185.220.101.42 · SESSION #7749 · 47m ACTIVE
+  </div>
+</div>
+
+<div id="glitch"></div>
+<div id="invertFlash"></div>
+<div id="tear"></div>
+
+<div id="confirmTrap">
+  <div class="trap-box">
+    <div class="trap-title">⚠ 종료 차단됨</div>
+    <div class="trap-text">
+      활성 세션이 감지되었습니다.<br>
+      원격 호스트가 연결을 유지 중입니다.<br>
+      <span style="color:#ff4444; font-size:11px;">종료하려면 강제 재부팅이 필요합니다.</span>
+    </div>
+    <div class="trap-btns">
+      <button onclick="closeTrap()">계속 보기</button>
+      <button onclick="closeTrap()">닫기</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ============================================
+   BLACKOUT START + FULLSCREEN + HIDE WEB MARKERS
+   ============================================ */
+(function initStart() {
+  const blackout = document.getElementById('blackout');
+  let started = false;
+
+  const goFullscreen = async () => {
+    const el = document.documentElement;
+    try {
+      if (el.requestFullscreen) await el.requestFullscreen({ navigationUI: 'hide' });
+      else if (el.webkitRequestFullscreen) await el.webkitRequestFullscreen();
+      else if (el.mozRequestFullScreen) await el.mozRequestFullScreen();
+      else if (el.msRequestFullscreen) await el.msRequestFullscreen();
+    } catch(e) {}
+    try {
+      if (screen.orientation && screen.orientation.lock) {
+        await screen.orientation.lock('portrait');
+      }
+    } catch(e) {}
+    setTimeout(() => window.scrollTo(0, 1), 100);
+  };
+
+  const startHack = async () => {
+    if (started) return;
+    started = true;
+
+    await goFullscreen();
+
+    if (blackout) blackout.classList.add('off');
+
+    /* 오디오 초기화 */
+    try {
+      if (typeof initAudio === 'function') {
+        initAudio();
+        if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
+      }
+    } catch(e) {}
+
+    /* 해킹 시퀀스 시작 */
+    setTimeout(() => {
+      if (typeof hackSequence === 'function') hackSequence();
+    }, 400);
+  };
+
+  if (blackout) {
+    blackout.addEventListener('click', startHack, { once: true });
+    blackout.addEventListener('touchstart', startHack, { once: true });
+  }
+  document.addEventListener('click', startHack, { once: true });
+  document.addEventListener('touchstart', startHack, { once: true });
+
+  /* 3초 뒤 자동 시작 */
+  setTimeout(startHack, 3000);
+
+  window.addEventListener('scroll', () => {
+    if (window.scrollY !== 0) window.scrollTo(0, 0);
+  });
+
+  document.addEventListener('fullscreenchange', () => {
+    if (!document.fullscreenElement && started) {
+      setTimeout(() => {
+        try {
+          const el = document.documentElement;
+          if (el.requestFullscreen) el.requestFullscreen({ navigationUI: 'hide' });
+        } catch(e) {}
+      }, 100);
+    }
+  });
+})();
+
+const $ = id => document.getElementById(id);
+const termBody = $('termBody');
+const termTitle = $('termTitle');
+const statLeft = $('statLeft');
+const statRight = $('statRight');
+const glitch = $('glitch');
+const invertFlash = $('invertFlash');
+const tear = $('tear');
+const lockdown = $('lockdown');
+const lockdownCode = $('lockdownCode');
+const lockCount = $('lockCount');
+const lockText = $('lockText');
+const lockFooter = $('lockFooter');
+const camThumb = $('camThumb');
+const camTimer = $('camTimer');
+const lkBattery = $('lkBattery');
+const confirmTrap = $('confirmTrap');
+const body = document.body;
+
+history.pushState(null, '', location.href);
+window.addEventListener('popstate', () => {
+  history.pushState(null, '', location.href);
+  showTrap();
+});
+window.addEventListener('beforeunload', (e) => {
+  e.preventDefault();
+  e.returnValue = '';
+  showTrap();
+  return '';
+});
+window.addEventListener('pagehide', () => showTrap());
+window.addEventListener('visibilitychange', () => {
+  if (document.hidden) showTrap();
+});
+
+let trapVisible = false;
+function showTrap() {
+  if (lockdown.classList.contains('active') || trapVisible) return;
+  trapVisible = true;
+  confirmTrap.classList.add('active');
+  vibe([100, 40, 100]);
+}
+function closeTrap() {
+  trapVisible = false;
+  confirmTrap.classList.remove('active');
+  history.pushState(null, '', location.href);
+}
+
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'F5') { e.preventDefault(); showTrap(); }
+  if ((e.ctrlKey || e.metaKey) && e.key === 'r') { e.preventDefault(); showTrap(); }
+  if ((e.ctrlKey || e.metaKey) && e.key === 'w') { e.preventDefault(); showTrap(); }
+  if (e.altKey && e.key === 'F4') { e.preventDefault(); showTrap(); }
+});
+
+setInterval(() => {
+  history.pushState(null, '', location.href);
+}, 1000);
+
+const vibe = p => { if (navigator.vibrate) navigator.vibrate(p); };
+
+let audioCtx = null;
+function initAudio() {
+  try {
+    const AC = window.AudioContext || window.webkitAudioContext;
+    audioCtx = new AC();
+  } catch(e) { audioCtx = null; }
+}
+
+function clickSound() {
+  if (!audioCtx) return;
+  const now = audioCtx.currentTime;
+  const o = audioCtx.createOscillator();
+  const g = audioCtx.createGain();
+  o.type = 'square';
+  o.frequency.value = 900 + Math.random() * 700;
+  g.gain.setValueAtTime(0.022, now);
+  g.gain.exponentialRampToValueAtTime(0.001, now + 0.012);
+  o.connect(g).connect(audioCtx.destination);
+  o.start(now); o.stop(now + 0.015);
+}
+
+const HACK_POOL = '01!<>/\\|{}[]()#$%&*+=-_ABCDEFabcdef0123456789█▓▒░';
+
+function scrambleText(el, finalText, duration = 1200, fps = 20) {
+  return new Promise(resolve => {
+    const chars = HACK_POOL;
+    const len = finalText.length;
+    const start = Date.now();
+    const frameDur = 1000 / fps;
+    const loop = () => {
+      const elapsed = Date.now() - start;
+      const progress = Math.min(1, elapsed / duration);
+      const lockedCount = Math.floor(progress * len);
+      let out = '';
+      for (let i = 0; i < len; i++) {
+        const c = finalText[i];
+        if (i < lockedCount || c === ' ') out += c;
+        else out += chars[Math.floor(Math.random() * chars.length)];
+      }
+      el.textContent = out;
+      if (progress < 1) setTimeout(loop, frameDur);
+      else { el.textContent = finalText; resolve(); }
+    };
+    loop();
+  });
+}
+
+function permanentScramble(el, originalText, speed = 120) {
+  const chars = HACK_POOL;
+  const len = originalText.length;
+  const id = setInterval(() => {
+    let out = '';
+    for (let i = 0; i < len; i++) {
+      if (Math.random() < 0.3) out += originalText[i];
+      else out += chars[Math.floor(Math.random() * chars.length)];
+    }
+    el.textContent = out;
+  }, speed);
+  return () => clearInterval(id);
+}
+
+function scrambleLine(text, cls = 'scramble-line', dur = 700) {
+  const el = makeLine('', cls);
+  scrambleText(el, text, dur).then(() => {
+    el.className = 'line ' + cls;
+  });
+  return el;
+}
+
+let humOsc = null, humGain = null;
+function startHum() {
+  if (!audioCtx) return;
+  humOsc = audioCtx.createOscillator();
+  humGain = audioCtx.createGain();
+  humOsc.type = 'sine';
+  humOsc.frequency.value = 60;
+  humGain.gain.value = 0;
+  humGain.gain.linearRampToValueAtTime(0.03, audioCtx.currentTime + 0.8);
+  humOsc.connect(humGain).connect(audioCtx.destination);
+  humOsc.start();
+}
+
+let noiseSrc = null, noiseGain = null;
+function startNoise() {
+  if (!audioCtx) return;
+  const bufferSize = 2 * audioCtx.sampleRate;
+  const buf = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+  const data = buf.getChannelData(0);
+  for (let i = 0; i < bufferSize; i++) data[i] = Math.random() * 2 - 1;
+  noiseSrc = audioCtx.createBufferSource();
+  noiseSrc.buffer = buf;
+  noiseSrc.loop = true;
+  const lp = audioCtx.createBiquadFilter();
+  lp.type = 'lowpass';
+  lp.frequency.value = 400;
+  noiseGain = audioCtx.createGain();
+  noiseGain.gain.value = 0;
+  noiseGain.gain.linearRampToValueAtTime(0.02, audioCtx.currentTime + 1);
+  noiseSrc.connect(lp).connect(noiseGain).connect(audioCtx.destination);
+  noiseSrc.start();
+}
+
+let heartTimer = null;
+function startHeart() {
+  if (heartTimer) return;
+  const beat = () => {
+    if (!audioCtx) return;
+    const now = audioCtx.currentTime;
+    const o = audioCtx.createOscillator();
+    const g = audioCtx.createGain();
+    o.type = 'sine';
+    o.frequency.value = 48;
+    g.gain.setValueAtTime(0.3, now);
+    g.gain.exponentialRampToValueAtTime(0.001, now + 0.28);
+    o.connect(g).connect(audioCtx.destination);
+    o.start(now); o.stop(now + 0.32);
+    setTimeout(() => {
+      if (!audioCtx) return;
+      const n2 = audioCtx.currentTime;
+      const o2 = audioCtx.createOscillator();
+      const g2 = audioCtx.createGain();
+      o2.type = 'sine';
+      o2.frequency.value = 42;
+      g2.gain.setValueAtTime(0.22, n2);
+      g2.gain.exponentialRampToValueAtTime(0.001, n2 + 0.24);
+      o2.connect(g2).connect(audioCtx.destination);
+      o2.start(n2); o2.stop(n2 + 0.28);
+    }, 200);
+  };
+  beat();
+  heartTimer = setInterval(beat, 1300);
+}
+
+const wait = ms => new Promise(r => setTimeout(r, ms));
+
+function makeLine(text, cls = '') {
+  const el = document.createElement('div');
+  el.className = 'line ' + cls;
+  el.textContent = text;
+  termBody.appendChild(el);
+  termBody.scrollTop = termBody.scrollHeight;
+  if (termBody.children.length > 400) termBody.removeChild(termBody.firstChild);
+  return el;
+}
+
+async function typeLine(text, cls = '', speed = 6) {
+  const el = makeLine('', cls + ' cursor');
+  for (let i = 0; i < text.length; i++) {
+    el.textContent = text.slice(0, i + 1);
+    termBody.scrollTop = termBody.scrollHeight;
+    if (i % 3 === 0) clickSound();
+    await wait(speed);
+  }
+  el.className = 'line ' + cls;
+  return el;
+}
+
+function printLine(text, cls = '') {
+  return makeLine(text, cls);
+}
+
+function progressBar(label, ms = 400) {
+  return new Promise(resolve => {
+    const el = makeLine('', 'ok');
+    const start = Date.now();
+    const total = 26;
+    const tick = () => {
+      const t = Math.min(1, (Date.now() - start) / ms);
+      const filled = Math.floor(t * total);
+      const bar = '█'.repeat(filled) + '░'.repeat(total - filled);
+      el.textContent = `${label} [${bar}] ${Math.round(t*100)}%`;
+      termBody.scrollTop = termBody.scrollHeight;
+      if (t < 1) requestAnimationFrame(tick);
+      else resolve();
+    };
+    tick();
+  });
+}
+
+function shortGlitch(color = 'default', dur = 400) {
+  return new Promise(resolve => {
+    glitch.className = '';
+    if (color !== 'default') glitch.classList.add(color);
+    glitch.classList.add('on');
+    body.classList.add('microquake');
+    vibe([80, 30, 80]);
+    setTimeout(() => {
+      glitch.classList.remove('on');
+      body.classList.remove('microquake');
+      glitch.className = '';
+      resolve();
+    }, dur);
+  });
+}
+
+function longGlitch(dur = 1200) {
+  return new Promise(resolve => {
+    glitch.classList.add('on');
+    invertFlash.classList.add('on');
+    tear.classList.add('on');
+    body.classList.add('microquake');
+    vibe([150, 40, 150, 40, 200]);
+    setTimeout(() => {
+      glitch.classList.remove('on');
+      invertFlash.classList.remove('on');
+      tear.classList.remove('on');
+      body.classList.remove('microquake');
+      resolve();
+    }, dur);
+  });
+}
+
+function flash(color = 'red') {
+  return new Promise(resolve => {
+    glitch.className = '';
+    glitch.classList.add(color, 'on');
+    vibe([40]);
+    setTimeout(() => {
+      glitch.classList.remove('on');
+      glitch.className = '';
+      resolve();
+    }, 150);
+  });
+}
+
+function hexDump(n = 8, cols = 16) {
+  let lineNum = 0;
+  return new Promise(resolve => {
+    const step = () => {
+      if (lineNum >= n) { resolve(); return; }
+      const addr = (0x7f000000 + lineNum * cols).toString(16).padStart(8, '0');
+      let hex = '';
+      let asc = '';
+      for (let i = 0; i < cols; i++) {
+        const b = Math.floor(Math.random() * 256);
+        hex += b.toString(16).padStart(2, '0') + ' ';
+        asc += (b >= 32 && b < 127) ? String.fromCharCode(b) : '.';
+      }
+      makeLine(`  ${addr}  ${hex} |${asc}|`, 'hex');
+      lineNum++;
+      termBody.scrollTop = termBody.scrollHeight;
+      setTimeout(step, 40);
+    };
+    step();
+  });
+}
+
+function randomHash(len = 64) {
+  const chars = '0123456789abcdef';
+  let s = '';
+  for (let i = 0; i < len; i++) s += chars[Math.floor(Math.random() * chars.length)];
+  return s;
+}
+
+function randomB64(len = 48) {
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
+  let s = '';
+  for (let i = 0; i < len; i++) s += chars[Math.floor(Math.random() * chars.length)];
+  return s + '=';
+}
+
+function randomIP() {
+  return `${Math.floor(Math.random()*255)}.${Math.floor(Math.random()*255)}.${Math.floor(Math.random()*255)}.${Math.floor(Math.random()*255)}`;
+}
+
+function randomPort() {
+  return [22, 80, 443, 3306, 5432, 6379, 8080, 8443, 9001, 27017, 50000][Math.floor(Math.random()*11)];
+}
+
+function randomMAC() {
+  const hex = '0123456789ABCDEF';
+  let s = '';
+  for (let i = 0; i < 6; i++) {
+    s += hex[Math.floor(Math.random()*16)] + hex[Math.floor(Math.random()*16)];
+    if (i < 5) s += ':';
+  }
+  return s;
+}
+
+function randomAddr() {
+  return '0x' + Math.floor(Math.random() * 0xffffffff).toString(16).padStart(8, '0');
+}
+
+async function liveWaveform(dur = 1000, label = 'mic   ') {
+  const el = makeLine('', 'cyan');
+  const blocks = ['▁','▂','▃','▄','▅','▆','▇','█'];
+  const start = Date.now();
+  return new Promise(resolve => {
+    const loop = () => {
+      const t = (Date.now() - start) / dur;
+      if (t > 1) { el.textContent = `${label}|signal quiet|`; resolve(); return; }
+      let wave = '';
+      for (let i = 0; i < 32; i++) {
+        const v = Math.abs(Math.sin(t * 12 + i * 0.4) * (0.5 + Math.random() * 0.5));
+        wave += blocks[Math.min(7, Math.floor(v * 8))];
+      }
+      el.textContent = `${label}|${wave}|`;
+      termBody.scrollTop = termBody.scrollHeight;
+      requestAnimationFrame(loop);
+    };
+    loop();
+  });
+}
+
+async function liveTraffic(dur = 1200) {
+  const el = makeLine('', 'ok');
+  const start = Date.now();
+  return new Promise(resolve => {
+    const loop = () => {
+      const t = (Date.now() - start) / dur;
+      if (t > 1) { resolve(); return; }
+      const up = (3 + Math.random() * 6).toFixed(1);
+      const down = (8 + Math.random() * 14).toFixed(1);
+      const bars = Math.floor(down / 2);
+      el.textContent = `net  ↑ ${up} MB/s   ↓ ${down} MB/s  ${'▮'.repeat(bars)}`;
+      termBody.scrollTop = termBody.scrollHeight;
+      requestAnimationFrame(loop);
+    };
+    loop();
+  });
+}
+
+function countdown(seconds = 5) {
+  return new Promise(resolve => {
+    const el = makeLine('', 'danger');
+    let n = seconds;
+    const tick = () => {
+      el.textContent = `⚠ 전송 완료까지 0:${String(n).padStart(2,'0')}`;
+      termBody.scrollTop = termBody.scrollHeight;
+      if (n <= 0) { resolve(); return; }
+      n--;
+      setTimeout(tick, 1000);
+    };
+    tick();
+  });
+}
+
+async function hackSequence() {
+  if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
+  vibe([30]);
+  startHum();
+
+  permanentScramble(termTitle, '— root@ghost — session #7749 — uptime 00:47:13', 120);
+  permanentScramble(statRight, 'uplink 4.7 MB/s', 150);
+
+  await wait(150);
+
+  await typeLine('$ ./0x7F3A --f=/var/log/0xA7F/s7749.log', 'user', 5);
+  await wait(120);
+  printLine('[47:13] 이미 47분째 침투 유지 중', 'warn');
+  printLine('[47:13] 이 기기에서 당신이 지금 보는 화면은', 'dim');
+  printLine('[47:13] 우리가 원격으로 스트리밍 중입니다.', 'danger');
+  scrambleLine('0x' + randomHash(12).toUpperCase(), 'scramble-line', 900);
+  await wait(300);
+  await shortGlitch('cyan', 300);
+
+  await typeLine('$ 0xGF --p=sys.id.0', 'user', 5);
+  await progressBar('  0x01', 350);
+  printLine('  ro.product.model         = SM-A245N', 'dim');
+  printLine('  ro.product.manufacturer  = samsung', 'dim');
+  printLine('  ro.build.version.release = 13', 'dim');
+  printLine('  ro.build.version.sdk     = 33', 'dim');
+  printLine('  ro.product.locale        = ko-KR', 'dim');
+  printLine(`  ro.serialno              = ${randomHash(16)}`, 'hash');
+  scrambleLine('0x' + randomHash(8).toUpperCase(), 'scramble-line', 700);
+  await wait(200);
+
+  await typeLine('$ xxd -l 0x100 /dev/0xA7F/0x01', 'user', 5);
+  await hexDump(8, 16);
+  await wait(100);
+  await flash('red');
+
+  await typeLine('$ dm --p=0x01 | grep -E "0xA|0xB|0xC"', 'user', 5);
+  printLine('  level: 47   status: discharging   temp: 31.2°C', 'warn');
+  printLine('  voltage: 3874   health: good', 'dim');
+  await wait(100);
+
+  await typeLine('$ dm --p=0x02 | grep -E "0xD|0xE"', 'user', 5);
+  printLine('  mScreenState=ON   brightness=158 (62%)', 'warn');
+  printLine('  refreshRate=120.0Hz', 'dim');
+  await wait(100);
+
+  await typeLine('$ dm --p=0x03 | grep -E "0xF|0x10"', 'user', 5);
+  printLine('  mScreenOn=true  mCharging=false', 'dim');
+  await wait(120);
+
+  await typeLine('$ u0x --all', 'user', 5);
+  printLine('  Linux localhost 4.14.190-perf+ #1 SMP PREEMPT arm64', 'dim');
+  await wait(80);
+
+  await typeLine('$ cat /p/0x0M | head -5', 'user', 5);
+  printLine('  MemTotal:     3765244 kB', 'dim');
+  printLine('  MemFree:       412860 kB', 'dim');
+  printLine('  MemAvailable: 1840320 kB', 'dim');
+  printLine('  Buffers:        38204 kB', 'dim');
+  printLine('  Cached:       1128840 kB', 'dim');
+  await wait(100);
+
+  await typeLine('$ 0xMS --pid=0x1E41 --r=0x7F000000-0x7FFFFFFF', 'user', 4);
+  await progressBar('  0x02', 500);
+  for (let i = 0; i < 8; i++) {
+    printLine(`  ${randomAddr()}  0x40  ${randomHash(32)}`, 'hash');
+    await wait(60);
+  }
+  await wait(100);
+  await shortGlitch('magenta', 250);
+
+  await typeLine('$ 0xCA --cap=0x01 --strm --fps=0x1E', 'user', 5);
+  await progressBar('  0x03', 400);
+  printLine('[+] front_camera.raw  ·  1280x720  ·  30fps', 'danger');
+  printLine('[+] streaming → 185.220.101.42:9001', 'danger');
+  printLine(`    stream_id = ${randomHash(16)}`, 'hash');
+  scrambleLine('0x' + randomHash(12).toUpperCase(), 'scramble-line', 800);
+  await wait(200);
+
+  await typeLine('$ 0xAU --cap=0x01 --live --codec=0x1', 'user', 5);
+  await progressBar('  0x04', 400);
+  printLine('[+] microphone  ·  44.1kHz  ·  mono  ·  aac', 'danger');
+  await liveWaveform(1200, 'mic   ');
+  await wait(100);
+
+  await typeLine('$ dm --p=0x04 | grep -E "0x11|0x12"', 'user', 5);
+  printLine('  Device 0 (front) is open. Client PID 7749', 'danger');
+  await wait(80);
+
+  await typeLine('$ dm --p=0x05 | grep -E "0x13|0x14"', 'user', 5);
+  printLine('  Input thread active · record 48000Hz', 'danger');
+  await wait(120);
+  await longGlitch(1000);
+
+  await typeLine('$ pm list -3 | wc -l', 'user', 5);
+  printLine('  87', 'warn');
+  await wait(80);
+
+  await typeLine('$ pm list -3 | head -8', 'user', 4);
+  printLine('  package:com.kakao.talk', 'mag');
+  printLine('  package:com.instagram.android', 'mag');
+  printLine('  package:com.google.android.youtube', 'mag');
+  printLine('  package:com.supercell.brawlstars', 'mag');
+  printLine('  package:com.naver.webtoon', 'mag');
+  printLine('  package:net.daum.android.daum', 'mag');
+  printLine('  package:com.discord', 'mag');
+  printLine('  ... 80 more', 'dim');
+  await wait(120);
+
+  await typeLine('$ 0xFK --hook --pkg=com.kakao.talk', 'user', 4);
+  await progressBar('  0x05', 400);
+  printLine('[frida] attaching to pid 1204...', 'dim');
+  printLine('[frida] instrumenting com.kakao.talk', 'dim');
+  printLine(`[frida] hook_offset = ${randomAddr()}`, 'hash');
+  printLine(`[frida] payload_b64 = ${randomB64(64)}`, 'b64');
+  scrambleLine('0x' + randomHash(10).toUpperCase(), 'scramble-line', 900);
+  await wait(150);
+
+  await typeLine('$ run-as com.kakao.talk ls databases/', 'user', 5);
+  printLine('  KakaoTalk.db      172 MB', 'danger');
+  printLine('  chat_logs.db       48 MB', 'danger');
+  printLine('  friends.db          2 MB', 'dim');
+  await wait(80);
+
+  await typeLine('$ sqlite3 KakaoTalk.db "SELECT COUNT(*) FROM messages;"', 'user', 5);
+  printLine('  12,904', 'danger');
+  await wait(80);
+
+  await typeLine('$ sqlite3 KakaoTalk.db "SELECT sender,length(msg) FROM messages LIMIT 3;"', 'user', 4);
+  printLine('  user_a   47', 'mag');
+  printLine('  user_b   12', 'mag');
+  printLine('  user_c   88', 'mag');
+  await wait(100);
+
+  await typeLine('$ sha256sum KakaoTalk.db', 'user', 5);
+  printLine(`  ${randomHash(64)}  KakaoTalk.db`, 'hash');
+  scrambleLine('0x' + randomHash(14).toUpperCase(), 'scramble-line', 1000);
+  await wait(200);
+  await flash('cyan');
+
+  await typeLine('$ sqlite3 history.db "SELECT title FROM watch_history LIMIT 4;"', 'user', 4);
+  printLine('  "[PL] 새벽 감성 노래 모음"', 'dim');
+  printLine('  "신규 게임 리뷰"', 'dim');
+  printLine('  "중2 수학 중간고사 대비"', 'warn');
+  printLine('  "Roblox Brookhaven 업데이트"', 'dim');
+  await wait(100);
+
+  await typeLine('$ find /storage/emulated/0/DCIM -type f | wc -l', 'user', 5);
+  printLine('  2,147', 'warn');
+  await wait(80);
+
+  await typeLine('$ exiftool -T -filename -DateTimeOriginal -GPSLatitude /storage/emulated/0/DCIM/Camera/*.jpg | head -4', 'user', 4);
+  printLine('  IMG_20240921_183047.jpg  2024:09:21 18:30:47  37.5***', 'dim');
+  printLine('  IMG_20240920_120341.jpg  2024:09:20 12:03:41  37.5***', 'dim');
+  printLine('  IMG_20240915_221108.jpg  2024:09:15 22:11:08  37.5***', 'dim');
+  printLine('  ... 2,144 more', 'dim');
+  await wait(100);
+
+  await typeLine('$ find /storage/emulated/0/Pictures/Screenshots -type f | wc -l', 'user', 5);
+  printLine('  1,247', 'warn');
+  await wait(80);
+
+  await typeLine('$ dm --p=0x06 | grep -E "0x15|0x16" | head -3', 'user', 5);
+  printLine('  SSID: "iptime_2F"', 'dim');
+  printLine('  SSID: "SK_WiFi_Guest"', 'dim');
+  printLine('  SSID: "academy_wifi"', 'warn');
+  await wait(80);
+
+  await typeLine('$ dm --p=0x07 | grep 0x17 | head -3', 'user', 5);
+  printLine(`  ${randomMAC()}`, 'mag');
+  printLine(`  ${randomMAC()}`, 'mag');
+  await wait(100);
+
+  await typeLine('$ ns -tunap | grep 0x18 | head -6', 'user', 4);
+  for (let i = 0; i < 6; i++) {
+    printLine(`  tcp  ${randomIP()}:${randomPort()}  ${randomIP()}:${randomPort()}  ESTABLISHED`, 'cyan');
+    await wait(60);
+  }
+  await wait(100);
+  await longGlitch(1200);
+
+  await typeLine('$ ls /proc/ | grep -E "^[0-9]+$" | head -10', 'user', 5);
+  printLine('  1  412  774  1204  1893  2047  3918  4471  5203  6104', 'dim');
+  await wait(80);
+
+  await typeLine('$ cat /proc/1204/status | head -4', 'user', 5);
+  printLine('  Name:   com.kakao.talk', 'warn');
+  printLine('  Pid:    1204', 'warn');
+  printLine('  Uid:    10412', 'dim');
+  printLine('  State:  S (sleeping)', 'dim');
+  await wait(100);
+
+  await typeLine('$ xxd -l 0x80 /data/data/com.kakao.talk/databases/KakaoTalk.db', 'user', 4);
+  await hexDump(5, 16);
+  await wait(80);
+
+  await typeLine('$ head -c 0x60 KakaoTalk.db | base64', 'user', 4);
+  for (let i = 0; i < 3; i++) {
+    printLine(`  ${randomB64(72)}`, 'b64');
+    await wait(50);
+  }
+  await wait(100);
+
+  await typeLine('$ 0xGPS --track --int=0x01 --dur=0x06', 'user', 5);
+  for (let i = 0; i < 6; i++) {
+    const lat = (37.5 + Math.random() * 0.02).toFixed(5);
+    const lon = (127.0 + Math.random() * 0.02).toFixed(5);
+    printLine(`  [${i+1}s]  ${lat}, ${lon}  ±3m  ${(Math.random()*3).toFixed(1)}km/h`, 'cyan');
+    await wait(90);
+  }
+  scrambleLine('0x' + randomHash(8).toUpperCase(), 'scramble-line', 700);
+  await wait(150);
+
+  await typeLine('$ tail -f /var/log/ghost/keystrokes.log', 'user', 5);
+  const keys = ['s','e','a','r','c','h',' ','ㅇ','ㅅ','ㅓ',' ','ㄱ','ㅏ','ㅈ','ㅏ'];
+  for (const k of keys) {
+    printLine(`  [${new Date().toTimeString().slice(0,8)}]  key  '${k}'`, 'mag');
+    await wait(45);
+  }
+  await wait(80);
+  await flash('magenta');
+
+  await typeLine('$ 0xIF -i wlan0 -t', 'user', 5);
+  await liveTraffic(1200);
+  await wait(80);
+
+  await typeLine('$ sqlite3 contacts.db "SELECT COUNT(*) FROM contacts;"', 'user', 5);
+  printLine('  187', 'warn');
+  await wait(60);
+  await typeLine('$ sqlite3 contacts.db "SELECT id,length(name),length(phone) FROM contacts LIMIT 4;"', 'user', 5);
+  printLine('  id_001   len 2   len 13', 'mag');
+  printLine('  id_002   len 2   len 13', 'mag');
+  printLine('  id_003   len 2   len 11', 'mag');
+  printLine('  id_004   len 2   len 13', 'mag');
+  await wait(80);
+
+  await typeLine('$ sqlite3 calllog.db "SELECT COUNT(*) FROM calls;"', 'user', 5);
+  printLine('  412', 'warn');
+  await wait(60);
+  await typeLine('$ sqlite3 calllog.db "SELECT duration FROM calls ORDER BY ts DESC LIMIT 3;"', 'user', 5);
+  printLine('  107', 'dim');
+  printLine('  502', 'dim');
+  printLine('  191', 'dim');
+  await wait(100);
+
+  await typeLine('$ 0xDM --pid=0x4B4 --off=0x40000000', 'user', 4);
+  await progressBar('  0x06', 400);
+  await hexDump(8, 16);
+  await wait(80);
+  await longGlitch(900);
+
+  await typeLine('$ 0xTD -i wlan0 -c 0x06 -nn -q', 'user', 4);
+  for (let i = 0; i < 6; i++) {
+    printLine(`  IP ${randomIP()}.${randomPort()} > ${randomIP()}.${randomPort()}: tcp ${Math.floor(Math.random()*1000)+1}`, 'hash');
+    await wait(70);
+  }
+  await wait(100);
+
+  await typeLine('$ 0xRK --inst --per --bh', 'user', 4);
+  await progressBar('  0x07', 450);
+  printLine('[+] boot_hook      → /system/etc/init.d/ghost', 'danger');
+  printLine('[+] persistence    → cron + systemd alias', 'danger');
+  printLine('[+] hide_pid       → /proc/ghost_hide', 'danger');
+  scrambleLine('0x' + randomHash(10).toUpperCase(), 'scramble-line', 900);
+  await wait(200);
+
+  await typeLine('$ tar -czf exfil.tar.gz /storage/emulated/0/DCIM /storage/emulated/0/Download /data/data/com.kakao.talk', 'user', 4);
+  await progressBar('  0x08', 600);
+  await wait(80);
+
+  await typeLine('$ sha512sum exfil.tar.gz', 'user', 5);
+  printLine(`  ${randomHash(64)}`, 'hash');
+  printLine(`  ${randomHash(64)}  exfil.tar.gz`, 'hash');
+  await wait(80);
+  await flash('red');
+
+  await typeLine('$ openssl enc -aes-256-cbc -pbkdf2 -salt -in exfil.tar.gz -out exfil.enc -pass pass:$KEY', 'user', 4);
+  await progressBar('  0x09', 600);
+  await wait(80);
+
+  printLine('', '');
+  printLine('[*] 업로드 시작 → 185.220.101.42:443', 'warn');
+  scrambleLine('0x' + randomHash(12).toUpperCase(), 'scramble-line', 800);
+  await wait(200);
+  await progressBar('  tx #1', 800);
+  await shortGlitch('default', 300);
+  await progressBar('  tx #2', 800);
+  await shortGlitch('cyan', 300);
+  await progressBar('  tx #3', 800);
+  await wait(100);
+
+  printLine('[+] photos      2,147 / 2,147   1.8 GB', 'ok');
+  printLine('[+] screenshots 1,247 / 1,247   642 MB', 'ok');
+  printLine('[+] kakao msgs 12,904 / 12,904  172 MB', 'ok');
+  printLine('[+] contacts      187 / 187     84 KB', 'ok');
+  printLine('[+] call log      412 / 412     38 KB', 'ok');
+  printLine('[+] tokens         24 / 24      8 KB', 'mag');
+  printLine(`[+] session_sig = ${randomHash(32)}`, 'hash');
+  await wait(120);
+
+  printLine('', '');
+  printLine('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━', 'danger');
+  await countdown(5);
+  printLine('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━', 'danger');
+  printLine('   전  송   완  료   ·   3.8 GB   ·   추적 불가', 'danger');
+  await wait(150);
+
+  await typeLine('$ shred -n 3 -z /data/local/tmp/*', 'user', 5);
+  await progressBar('  0x0D', 350);
+  printLine('[+] logs wiped · forensics N/A', 'ok');
+  await wait(80);
+
+  await typeLine('$ rm -rf /data/local/tmp/ghost*', 'user', 5);
+  await wait(80);
+
+  await typeLine('$ logcat -c && rm -f /data/system/dropbox/*', 'user', 5);
+  await progressBar('  0x0E', 300);
+  await wait(80);
+  await flash('cyan');
+
+  await typeLine('$ exit --daemon', 'user', 6);
+  printLine('[+] 백그라운드 프로세스 유지 · pid 9812', 'danger');
+  printLine(`[+] session_id   = ${randomHash(24)}`, 'hash');
+  printLine(`[+] handshake    = ${randomHash(24)}`, 'hash');
+  printLine(`[+] beacon_iv    = ${randomHash(32)}`, 'hash');
+  await wait(150);
+
+  await longGlitch(1400);
+  await wait(200);
+  startLockdown();
+}
+
+function startLockdown() {
+  const term = $('term');
+  term.style.opacity = '0';
+
+  setTimeout(() => {
+    term.style.display = 'none';
+    lockdown.classList.add('active');
+    camThumb.classList.add('active');
+    startNoise();
+    startHeart();
+    vibe([400, 80, 400, 80, 700]);
+
+    const lockTitleEl = document.querySelector('.lock-title');
+    if (lockTitleEl) {
+      lockTitleEl.textContent = '';
+      scrambleText(lockTitleEl, 'LOCKED', 2000, 15);
+    }
+
+    const lockSubEl = document.querySelector('.lock-sub');
+    if (lockSubEl) {
+      lockSubEl.textContent = '';
+      setTimeout(() => {
+        scrambleText(lockSubEl, '// ALL SESSIONS HIJACKED //', 1800, 20);
+      }, 400);
+    }
+
+    const footerEl = document.getElementById('lockFooter');
+    if (footerEl) {
+      setTimeout(() => {
+        permanentScramble(footerEl, '185.220.101.42 · SESSION #7749 · 47m ACTIVE', 200);
+      }, 1500);
+    }
+
+    fillLockdownCode();
+    runLockCounter();
+    runFooterRotation();
+    runCamTimer();
+    runBatteryDrift();
+  }, 400);
+}
+
+function fillLockdownCode() {
+  const lines = [];
+  const chars = '01█▓▒░<>/\\|{}[]()#$%&*+=-_ABCDEFabcdef0123456789';
+  for (let i = 0; i < 120; i++) {
+    let s = '';
+    const len = 40 + Math.floor(Math.random() * 40);
+    for (let j = 0; j < len; j++) s += chars[Math.floor(Math.random() * chars.length)];
+    lines.push(s);
+  }
+  lockdownCode.textContent = lines.join('\n') + '\n' + lines.join('\n');
+
+  setInterval(() => {
+    const nl = [];
+    for (let i = 0; i < 20; i++) {
+      let s = '';
+      const len = 40 + Math.floor(Math.random() * 40);
+      for (let j = 0; j < len; j++) s += chars[Math.floor(Math.random() * chars.length)];
+      nl.push(s);
+    }
+    lockdownCode.textContent = nl.join('\n') + '\n' + lockdownCode.textContent.slice(0, -5000);
+  }, 220);
+}
+
+function runLockCounter() {
+  let n = 0;
+  setInterval(() => {
+    n = (n + 1) % 100;
+    lockCount.textContent = String(n).padStart(2, '0');
+  }, 90);
+
+  const texts = ['MONITORING', 'RECORDING', 'STREAMING', 'TRACKING'];
+  let ti = 0;
+  setInterval(() => {
+    ti = (ti + 1) % texts.length;
+    const next = texts[ti];
+    scrambleText(lockText, next, 400, 30);
+  }, 2000);
+}
+
+function runFooterRotation() {
+  const msgs = [
+    '185.220.101.42 · SESSION #7749 · 47m ACTIVE',
+    '이 화면을 닫아도 세션은 유지됩니다',
+    '웹캠 스트리밍 중 · REC ●',
+    'CONTACT: gh0st@tor.onion',
+    '이 기기에서 다른 세션 2개 활성',
+  ];
+  let i = 0;
+  setInterval(() => {
+    i = (i + 1) % msgs.length;
+    lockFooter.style.opacity = '0';
+    setTimeout(() => {
+      lockFooter.textContent = '';
+      lockFooter.style.transition = 'opacity 0.4s ease';
+      lockFooter.style.opacity = '1';
+      scrambleText(lockFooter, msgs[i], 600, 25);
+    }, 400);
+  }, 4000);
+}
+
+function runCamTimer() {
+  let sec = 0;
+  setInterval(() => {
+    sec++;
+    const m = String(Math.floor(sec / 60)).padStart(2, '0');
+    const s = String(sec % 60).padStart(2, '0');
+    camTimer.textContent = `${m}:${s}`;
+  }, 1000);
+}
+
+function runBatteryDrift() {
+  let p = 47;
+  setInterval(() => {
+    if (p > 1) p -= 1;
+    lkBattery.textContent = `${p}% · not charging`;
+  }, 12000);
+}
+</script>
+</body>
+  </html>
